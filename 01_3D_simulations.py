@@ -148,7 +148,10 @@ def run_3D_simulations(
         if os.path.exists(output_folder):
             if verbose:
                 print(f" {output_folder} exists, rewriting in --force mode.")
-            os.remove(output_folder)
+            try:
+                os.remove(output_folder)
+            except Exception as e:
+                shutil.rmtree(output_folder)
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)

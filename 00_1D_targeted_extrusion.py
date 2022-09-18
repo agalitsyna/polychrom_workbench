@@ -2,14 +2,11 @@ from loadutils import *
 from simutils import *
 
 import logging
-
 logging.basicConfig(encoding="utf-8", level=logging.INFO)
 logging.info("Starting 1D simulations...")
 
 import tqdm
-
 import click
-
 
 @click.command()
 @click.option(
@@ -20,6 +17,7 @@ import click
     "--lifetime",
     "-L",
     default=100,
+    show_default=True,
     help="lifetime",
     type=int)
 @click.option(
@@ -65,12 +63,14 @@ import click
 @click.option(
     "--ctcf-capture-probability",
     default=0.25,
+    show_default=True,
     help="CTCF capture probability",
     type=np.float32,
 )
 @click.option(
     "--ctcf-release-probability",
     default=0.005,
+    show_default=True,
     help="CTCF release probability",
     type=np.float32,
 )
@@ -78,6 +78,7 @@ import click
     "--system-size",
     "-N",
     default=6000,
+    show_default=True,
     help="size of the single system ",
     type=int
 )
@@ -85,19 +86,21 @@ import click
     "--n-repeats",
     "-R",
     default=20,
+    show_default=True,
     help="how many times to repeat the system",
     type=int,
 )
 @click.option(
     "--trajectory-length",
     "-D",
-    default=None,
+    required=True,
     help="trajectory length (duration of simulations in number of steps)",
     type=int,
 )
 @click.option(
     "--step",
     default=10,
+    show_default=True,
     help="step length of simulations (how frequently to slice the sims)",
     type=int,
 )
@@ -106,7 +109,9 @@ import click
     "-o",
     "--output",
     required=True,
-    help="Output file")
+    help="Output file",
+    format=click.File('wb'),
+)
 
 
 def run_targeted_loading_extrusion(
@@ -211,7 +216,7 @@ Run targeted loading simulations with parameters:
     n_repeats, {n_repeats}
     trajectory_length, {trajectory_length}
     step, {step}
-Writing to outfile: {outfile}
+Writing to outfile: {outfile.name}
 Derived parameters:
     separation_t, {separation_t}
     separation_t_v1, {separation_t_v1}
@@ -284,53 +289,62 @@ Derived parameters:
     for i in range(n_lef):
         loadOneWithProbs(cohesins, occupied, args)
 
-    with h5py.File(outfile, mode="w") as myfile:
-        dset = myfile.create_dataset(
-            "positions",
-            shape=(trajectory_length, n_lef + n_lef_targeted, 2),
-            dtype=np.float32,
-            compression="gzip",
-        )
+    with h5py.File(outfile.name, mode="w") as myfile:
 
-        for i in tqdm.tqdm(range(trajectory_length), disable=tqdm_disable ):
-            cur = []
+        try:
+            dset = myfile.create_dataset(
+                "positions",
+                shape=(trajectory_length, n_lef + n_lef_targeted, 2),
+                dtype=np.float32,
+                compression="gzip",
+            )
 
-            for _ in range(step):
-                translocate(cohesins, occupied, args)
-                translocate(cohesins_targeted, occupied, args_targeted)
+            for i in tqdm.tqdm(range(trajectory_length), disable=tqdm_disable ):
+                cur = []
 
-            positions = [
-                (cohesin.left.pos, cohesin.right.pos)
-                for cohesin in cohesins + cohesins_targeted
-            ]
+                for _ in range(step):
+                    translocate(cohesins, occupied, args)
+                    translocate(cohesins_targeted, occupied, args_targeted)
 
-            cur.append(positions)
-            cur = np.array(cur)
-            dset[i : i + 1] = cur
+                positions = [
+                    (cohesin.left.pos, cohesin.right.pos)
+                    for cohesin in cohesins + cohesins_targeted
+                ]
 
-        myfile.attrs["N"] = L
-        myfile.attrs["n_lef"] = n_lef
+                cur.append(positions)
+                cur = np.array(cur)
+                dset[i : i + 1] = cur
 
-        myfile.attrs.update({
-            "lifetime": lifetime,
-            "separation": separation,
-            "separation_total": separation_total,
-            "n_lef_targeted": n_lef_targeted,
-            "enrichment": enrichment,
-            "loading_sites": ','.join([str(x) for x in loading_sites]),
-            "tads": ','.join([str(x) for x in tads]),
-            "ctcf_release_probability": ctcf_release_probability,
-            "ctcf_capture_probability": ctcf_capture_probability,
-            "system_size": system_size,
-            "n_repeats": n_repeats,
-            "trajectory_length": trajectory_length,
-            "outfile": outfile,
-            "separation_t": separation_t,
-            "separation_t_v1": separation_t_v1,
-            "fountain_separation": fountain_separation,
-            "n_lef": n_lef,
-            "n_lef_total": n_lef_total,
-        })
+            myfile.attrs["N"] = L
+            myfile.attrs["n_lef"] = n_lef
+
+            myfile.attrs.update({
+                "lifetime": lifetime,
+                "separation": separation,
+                "separation_total": separation_total,
+                "n_lef_targeted": n_lef_targeted,
+                "enrichment": enrichment,
+                "loading_sites": ','.join([str(x) for x in loading_sites]),
+                "tads": ','.join([str(x) for x in tads]),
+                "ctcf_release_probability": ctcf_release_probability,
+                "ctcf_capture_probability": ctcf_capture_probability,
+                "system_size": system_size,
+                "n_repeats": n_repeats,
+                "trajectory_length": trajectory_length,
+                "outfile": outfile.name,
+                "separation_t": separation_t,
+                "separation_t_v1": separation_t_v1,
+                "fountain_separation": fountain_separation,
+                "n_lef": n_lef,
+                "n_lef_total": n_lef_total,
+            })
+
+        except Exception as e:
+            import os
+            if os.path.exists(outfile.name):
+                os.remove(outfile.name)
+
+            raise Exception(e)
 
 
 if __name__ == "__main__":

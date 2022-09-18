@@ -228,7 +228,7 @@ def run_3D_simulations(
         else:
             a._apply_forces()
 
-        for i in 100: #range(restartSimulationEveryBlocks):
+        for i in range(restartSimulationEveryBlocks):
             if i % saveEveryBlocks == (saveEveryBlocks - 1):
                 a.do_block(steps=steps)
             else:

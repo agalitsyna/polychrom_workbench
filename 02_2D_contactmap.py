@@ -1,3 +1,15 @@
+"""
+for file in /net/levsha/share/agalicina/simulations/chromatin_fountains/data/traj3d/*; 
+do 
+	if [ ! -f "${file/traj3d/maps2d}.npy" ]
+        then
+	    python 02_2D_contactmap.py $file ${file/traj3d/maps2d}.npy; 
+        fi
+done
+
+"""
+
+
 from polychrom.hdf5_format import list_URIs, load_URI
 
 from polychrom.contactmaps import (
@@ -25,6 +37,7 @@ starts = list(range(0, N, N1))
 
 URIs = list_URIs(input_folder)
 print(len(URIs))
+assert len(URIs)==10100, "The simulations are not completed yet... re-submit"
 
 hmap = monomerResolutionContactMapSubchains(
     filenames=URIs,

@@ -110,7 +110,7 @@ import click
     "--output",
     required=True,
     help="Output file",
-    format=click.File('wb'),
+    type=click.File('wb'),
 )
 
 

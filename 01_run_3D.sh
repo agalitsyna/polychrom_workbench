@@ -1,14 +1,15 @@
 #SBATCH --job-name=3D-targeted-extrusion-test
 #SBATCH --metric=GPU
-#SBATCH --time=10:00:00
+#SBATCH --time=20:00:00
 #SBATCH --output=logs/serial_test_%j.log
-#SBATCH --array=0-211
+#SBATCH --array=0-100
 
 echo "Running script as job $JOB_ID with task id: $TASK_ID on GPU: $GPU_INDEX"
 
 DATAPATH="/net/levsha/share/agalicina/simulations/chromatin_fountains/"
 
-FILELIST=($DATAPATH/data/traj1d/*.h5py)
+FILELIST=($(ls -t $DATAPATH/data/traj1d/*.h5py))
+#($DATAPATH/data/traj1d/*.h5py)
 
 INFILE="${FILELIST[$TASK_ID]}"
 OUTFILE=${INFILE/traj1d/traj3d}

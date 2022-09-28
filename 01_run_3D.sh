@@ -2,7 +2,7 @@
 #SBATCH --metric=GPU
 #SBATCH --time=20:00:00
 #SBATCH --output=logs/serial_test_%j.log
-#SBATCH --array=0-100
+#SBATCH --array=0-227
 
 echo "Running script as job $JOB_ID with task id: $TASK_ID on GPU: $GPU_INDEX"
 

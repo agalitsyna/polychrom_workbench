@@ -1,0 +1,58 @@
+binsize = 250
+factor = 1000/binsize
+
+# Lifetime/separation expressed in 1000-bp bins (as usual):
+lifetimes_choices = [10, 50, 100, 200]
+separations_choices = [50, 100, 200, 1000]
+
+# Normalize to the binsize:
+lifetimes_choices = [x*factor for x in lifetimes_choices]
+separations_choices = [x*factor for x in separations_choices]
+
+pol_kin_choices = [0.001, 0.01, 0.1, 0.2]
+
+simulations = expand(
+    "data/traj1d/mov-barrier.250bp.L_{lifetimes}.S_{separations}.PK_{pol_kins}.h5py",
+    lifetimes=lifetimes_choices,
+    separations=separations_choices,
+    pol_kins=pol_kin_choices,
+)
+
+rule all:
+    input:
+        lambda wildcards: simulations
+
+rule simulate_1d:
+    output:
+        file="data/traj1d/mov-barrier.250bp.L_{lifetime}.S_{separation}.PK_{pol_kin}.h5py",
+    run:
+        unstall_rate = 1/(2*wildcards.lifetime)
+        shell("""
+            python 00_1D_simulation.py -v -o {output.file} \
+  --pol-loading 51,57,65,75,76,100,118,158,167,189,198,199,217,248,256,264,282,291,303,313,332,341,348,363,392,447,467,521,526,546,579,585,594,609,635,644,658,663,681,705,743,752,759,763,783,813,818,817,825,826,833,838,838,849,859,872,903,916,926,959,991 \
+  --pol-termination 38,54,70,70,81,82,136,139,164,171,192,205,222,236,261,276,289,297,308,309,315,335,359,367,387,440,476,476,536,565,567,591,596,615,628,639,654,659,697,724,733,748,758,782,801,808,816,819,821,832,832,836,846,851,866,868,892,906,929,976,995 \
+  --pol-kin-loading 0.19,3.88,0.09,0.43,1.03,0.84,1.56,0.26,2.01,0.63,3.09,0.48,0.21,2.84,1.06,0.20,1.07,0.19,1.00,3.60,0.32,0.65,0.95,0.16,1.68,1.40,0.11,0.26,1.23,0.19,0.33,0.59,3.40,0.19,4.27,0.23,0.48,0.11,0.37,0.10,3.44,2.73,0.20,0.16,0.10,1.02,0.94,0.12,1.96,0.86,0.15,0.13,1.11,0.24,1.35,0.65,0.11,1.35,0.11,0.92,1.73 \
+  -D 101000 -R 50 -N 1000 --pol-kin {wildcards.pol_kin} \
+  --lef-unstall-rate {unstall_rate} -L {wildcards.lifetime} -S {wildcards.separation}
+            """)
+
+#-L 400 -S 400 --pol-kin 0.1
+# lifetime is 100 Kb and sep is 1000 Kb; lef unstall is 1/(2*lifetime)
+
+# rule simulate_3d:
+#     input:
+#         file="data/traj1d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_.h5py",
+#     output:
+#         file="data/traj3d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_/blocks_9900-9999.h5",
+#     shell:
+#         "python 01_3D_simulations.py -v -f -G 0 -i {input.file} -o {output.file}"
+#
+# rule extract_maps:
+#     input:
+#         file="data/traj3d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_/blocks_9900-9999.h5",
+#     output:
+#         file="data/maps2d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_.npy",
+#     shell:
+#         "python 02_2D_contactmap.py `basename {input.file}` -o {output.file}"
+
+# for file in data/traj3d/*; do python 02_2D_contactmap.py $file ${file/traj3d/maps2d}.npy; done 

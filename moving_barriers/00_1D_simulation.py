@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 from loadutils import *
 from simutils import *
 

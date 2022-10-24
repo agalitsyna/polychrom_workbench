@@ -3,6 +3,15 @@
 #cython: wraparound=False
 #cython: initializedcheck=True
 
+
+# With modifications from:
+# https://github.com/mirnylab/Polymer-simulations-with-loop-extrusion-and-transcription
+# 23 Oct 2022
+
+# Modifications include:
+# extension of kin to array (account for different expression initialization rates)
+
+
 import numpy as np
 cimport numpy as np 
 import cython

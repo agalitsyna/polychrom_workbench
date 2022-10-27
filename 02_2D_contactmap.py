@@ -42,6 +42,14 @@ import click
     type=str,
 )
 @click.option(
+    "--nproc",
+    "-p",
+    default=4,
+    show_default=True,
+    help="Number of threads ",
+    type=int
+)
+@click.option(
     "--system-size",
     "-N",
     default=200,
@@ -73,7 +81,8 @@ def get_2D_contactmap(
     verbose,
     system_size,
     n_repeats,
-    expected_trajectory_length
+    expected_trajectory_length,
+    nproc
 ):
 
     ### Starting simulations and measuring time for simulations
@@ -102,7 +111,7 @@ def get_2D_contactmap(
         mapStarts=starts,
         mapN=system_size,
         cutoff=5,  # 2 corresponds to 50-100 nm, 1 monomer
-        n=8,
+        n=nproc,
         loadFunction=lambda x: load_URI(x)["pos"],
     )
 

@@ -3,7 +3,7 @@ sys.path.append("../")
 from loadutils import *
 from simutils import *
 
-import pyximport; pyximport.install()
+import pyximport; pyximport.install(setup_args={"script_args":["--compiler=unix"], "include_dirs":np.get_include()}, reload_support=True)
 from smcTranslocator_MovingBarrier import smcTranslocatorDirectional
 
 import logging

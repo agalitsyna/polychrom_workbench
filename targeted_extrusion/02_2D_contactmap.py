@@ -1,4 +1,5 @@
 """
+Example run: 
 for file in /net/levsha/share/agalicina/simulations/chromatin_fountains/data/traj3d/*; 
 do 
 	if [ ! -f "${file/traj3d/maps2d}.npy" ]

@@ -1,6 +1,4 @@
-lifetimes_choices = [100] #[50, 100, 200] # [100]
-# separations_choices = [20, 50, 100, 250, 300, 500, 750, 1000, 1250, 2500, 20000]
-### log-space with 3 + log-space with 1.5:
+lifetimes_choices = [100]
 separations_choices = [3, 11, 33, 100, 300, 900] + [225, 150, 66,  44]
 n_targeted_lefs_choices = [20, 50, 100]  + [33, 300] + [337, 225, 150, 66,  44,  29,  19,  13,   8]
 
@@ -11,9 +9,9 @@ sea_rises = expand(
     n_targeted_lefs=n_targeted_lefs_choices,
 )
 
-lifetimes_choices = [100] #[50, 100, 200] # [100]
-separations_choices = [3, 11, 33, 100, 300, 900] + [225, 150, 66,  44]  #[50, 100, 200, 500] # [100]
-enrichments_choices = [1.2, 2, 5, 10, 20, 50] #[0, 2, 3, 5, 10, 15, 20, 25, 50, 75, 100, 200, 250, 500, 750, 1000]
+lifetimes_choices = [100]
+separations_choices = [3, 11, 33, 100, 300, 900] + [225, 150, 66,  44]
+enrichments_choices = [1.2, 2, 5, 10, 20, 50]
 
 fountain_takeover = expand(
     "data/traj1d/fountain-takeover.L_{lifetimes}.ST_{separations}.E_{enrichments}.notads_0_.h5py",
@@ -22,49 +20,76 @@ fountain_takeover = expand(
     enrichments=enrichments_choices,
 )
 
-lifetimes_choices = [100] #[50, 100, 200] # [100]
-separations_choices = [3, 11, 33, 100, 300, 900] + [225, 150, 66,  44]  #[50, 100, 200, 500] # [100]
-enrichments_choices = [1.2, 2, 5, 10, 20, 50] #[0, 2, 3, 5, 10, 15, 20, 25, 50, 75, 100, 200, 250, 500, 750, 1000]
-ctcf_probs_choices = [0.01, 0.05, 0.1, 0.2, 0.25, 0.8] #, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 1.0]
+lifetimes_choices = [100]
+separations_choices = [100, 1000, 5000]
+n_targeted_lefs_choices = [20, 50, 100]  + [33, 300] + [337, 225, 150, 66,  44,  29,  19,  13,   8]
+ctcf_probs_choices = [1e-5, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.25, 0.8] 
 
-growing_boundaries = expand(
-    "data/traj1d/growing-boundaries.L_{lifetimes}.S_{separations}.E_{enrichments}.tads_{ctcf_probs}_.h5py",
+random_barriers = expand(
+    "data/traj1d/random-barriers-targetonly.L_{lifetimes}.S_{separations}.T_{n_targeted_lefs}.barriers_{ctcf_probs}_{ctcf_release_probs}_.h5py",
     lifetimes=lifetimes_choices,
     separations=separations_choices,
-    enrichments=enrichments_choices,
+    n_targeted_lefs=n_targeted_lefs_choices,
     ctcf_probs=ctcf_probs_choices,
+    ctcf_release_probs=ctcf_probs_choices,
 )
+
+lifetimes_choices = [100]
+separations_choices = [100, 1000, 5000]
+n_targeted_lefs_choices = [20, 50, 100]  + [33, 300] + [337, 225, 150, 66,  44,  29,  19,  13,   8]
+drift_choices = [1e-3, 1e-2, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]
+
+drifting_legs = expand(
+    "data/traj1d/drifting-legs-targetonly.L_{lifetimes}.S_{separations}.T_{n_targeted_lefs}.drift_{leg_step_probs}_.h5py",
+    lifetimes=lifetimes_choices,
+    separations=separations_choices,
+    n_targeted_lefs=n_targeted_lefs_choices,
+    leg_step_probs=drift_choices,
+)
+
 
 rule all:
     input:
-        lambda wildcards: growing_boundaries + sea_rises + fountain_takeover
+        lambda wildcards: sea_rises + fountain_takeover + random_barriers + drifting_legs
 
 rule simulate_1d:
     output:
-        file="data/traj1d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_.h5py",
+        file="data/traj1d/{mode}.L_{lifetime}.{separation_mode}_{separation}.{targeting_mode}_{targeting_param}.{tad_mode}_{tad_param}_{tad_param2}_.h5py",
     run:
+
         if "sea" in wildcards.mode:
             shell("""
-                python 00_1D_targeted_extrusion.py --output {output.file} \
-                        -L {wildcards.lifetime} -S {wildcards.separation} -T {wildcards.targeting_param} \
-                        --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10
+python 00_1D_targeted_extrusion.py --output {output.file} \
+    -L {wildcards.lifetime} -S {wildcards.separation} -T {wildcards.targeting_param} \
+    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10 -v
                 """)
+
         elif "fountain" in wildcards.mode:
             shell("""
-                python 00_1D_targeted_extrusion.py --output {output.file} \
-                    -L {wildcards.lifetime} --separation-total {wildcards.separation} -E {wildcards.targeting_param} \
-                    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10
+python 00_1D_targeted_extrusion.py --output {output.file} \
+    -L {wildcards.lifetime} --separation-total {wildcards.separation} -E {wildcards.targeting_param} \
+    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10 -v
                 """)
-        elif "boundaries" in wildcards.mode:
+
+        elif "barriers" in wildcards.mode:
             shell("""
-		python 00_1D_targeted_extrusion.py --output {output.file} \
-                    -L {wildcards.lifetime} -S {wildcards.separation} -E {wildcards.targeting_param} \
-                    --ctcf-capture-probability {wildcards.tad_param} --ctcf-release-probability 0.005 \
-                    --tads 100,400,600,900,1100,1400,1600,1900,2100,2400 \
-                    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10
-                """)
+python 00_1D_targeted_extrusion.py --output {output.file} \
+    -L {wildcards.lifetime} -S {wildcards.separation} -T {wildcards.targeting_param} \
+    --ctcf-capture-probability {wildcards.tad_param} --ctcf-release-probability {wildcards.tad_param2} \
+    --tads 150-350,650-850,1150-1350,1650-1850,2150-2350 \
+    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10 -v
+            """)
+
+        elif "drifting" in wildcards.mode:
+            shell("""
+python 00_1D_targeted_extrusion.py --output {output.file} \
+    -L {wildcards.lifetime} -S {wildcards.separation} -T {wildcards.targeting_param} \
+    --leg-step-prob {wildcards.tad_param} \
+    --loading-sites 250,750,1250,1750,2250 -N 2500 -R 20 -D 101000 --step 10 -v
+            """)
         else:
             print("""Unlisted mode requested... Nothing to be done """)
+
 
 # rule simulate_3d:
 #     input:

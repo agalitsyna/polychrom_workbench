@@ -300,15 +300,3 @@ def makeSparseContacts(cohesins, args):
     for i in cohesins:
         contacts.append([i.left.pos, i.right.pos])
     return contacts
-
-
-# def getSeparations(cohesins, args):
-#     separations = []
-#     for i in range(len(cohesins)):
-#         min_dist = args['N']
-#         for j in range(len(cohesins)):
-#             actual_dist = np.abs(cohesins[i].loading_point.pos-cohesins[j].loading_point.pos)
-#             if actual_dist<min_dist:
-#                 min_dist = actual_dist # should probably take the next one, not min
-#         separations.append(min_dist)
-#     return separations

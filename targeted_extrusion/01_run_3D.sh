@@ -9,7 +9,6 @@ echo "Running script as job $JOB_ID with task id: $TASK_ID on GPU: $GPU_INDEX"
 DATAPATH="/net/levsha/share/agalicina/simulations/chromatin_fountains/"
 
 FILELIST=($(ls -t $DATAPATH/data/traj1d/*.h5py))
-#($DATAPATH/data/traj1d/*.h5py)
 
 INFILE="${FILELIST[$TASK_ID]}"
 OUTFILE=${INFILE/traj1d/traj3d}

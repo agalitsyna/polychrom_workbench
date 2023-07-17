@@ -5,7 +5,9 @@ from copy import deepcopy
 
 
 class leg(object):
-    def __init__(self, pos, attrs={"stalled": False, "CTCF": False, "in solution": False}):
+    def __init__(
+        self, pos, attrs={"stalled": False, "CTCF": False, "in solution": False}
+    ):
         """
         A leg has two important attribues: pos (positions) and attrs (a custom list of attributes)
         """
@@ -81,7 +83,9 @@ def loadOneWithProbs(cohesins, occupied, args, position=None):
     """
 
     # If nothing is loadable, let cohesins stay in the solution:
-    if np.all(np.array(occupied) == 1) or np.all(np.array(args["probsLoading"]) * (1 - np.array(occupied)) == 0):
+    if np.all(np.array(occupied) == 1) or np.all(
+        np.array(args["probsLoading"]) * (1 - np.array(occupied)) == 0
+    ):
         c = cohesin(leg(np.nan), leg(np.nan))
         for side in [-1, 1]:
             c[side].attrs["in solution"] = True
@@ -96,7 +100,9 @@ def loadOneWithProbs(cohesins, occupied, args, position=None):
     else:
         ntrials = 0
         while ntrials < 3:
-            a = np.random.choice(np.arange(args["N"]), size=1, p=args["probsLoading"])[0]
+            a = np.random.choice(np.arange(args["N"]), size=1, p=args["probsLoading"])[
+                0
+            ]
             if (occupied[a] == 0) and (occupied[a + 1] == 0):
                 occupied[a] = 1
                 occupied[a + 1] = 1
@@ -153,8 +159,9 @@ def release(cohesin, occupied, args):
 
     # attempting to release either side
     for side in [-1, 1]:
-        if (np.random.random() < args["ctcfRelease"][side].get(cohesin[side].pos, 0)) \
-                and (cohesin[side].attrs["CTCF"]):
+        if (
+            np.random.random() < args["ctcfRelease"][side].get(cohesin[side].pos, 0)
+        ) and (cohesin[side].attrs["CTCF"]):
             cohesin[side].attrs["CTCF"] = False
     return cohesin
 
@@ -184,9 +191,11 @@ def translocate(cohesins, occupied, args):
                 occupied[cohesins[i].left.pos] = 0
                 occupied[cohesins[i].right.pos] = 0
                 # del cohesins[i]
-                loadOneWithProbs(cohesins, occupied, args, i)  # Immediately load cohesin when it detaches
+                loadOneWithProbs(
+                    cohesins, occupied, args, i
+                )  # Immediately load cohesin when it detaches
                 # last_tocheck += -1
-            #else:
+            # else:
             # i += 1
         # else:
         i += 1
@@ -205,7 +214,7 @@ def translocate(cohesins, occupied, args):
             # del cohesins[i]
             loadOneWithProbs(cohesins, occupied, args, i)
             # last_tocheck += -1
-        #else:
+        # else:
         i += 1
 
     # finally we translocate, and mark stalled cohesins because the unloadProb needs this
@@ -234,26 +243,31 @@ def translocate(cohesins, occupied, args):
 
 def color(cohesins, args):
     "A helper function that converts a list of cohesins to an array colored by cohesin state"
+
     def state(attrs):
         if attrs["stalled"]:
             return 2
         if attrs["CTCF"]:
             return 3
         return 1
+
     ar = np.zeros(args["N"])
     for i in cohesins:
         ar[i.left.pos] = state(i.left.attrs)
         ar[i.right.pos] = state(i.right.attrs)
     return ar
 
+
 def color_targeted(cohesins, args):
     "A helper function that converts a list of cohesins to an array colored by cohesin state"
+
     def state(attrs):
         if attrs["stalled"]:
             return 5
         if attrs["CTCF"]:
             return 6
         return 4
+
     ar = np.zeros(args["N"])
     for i in cohesins:
         ar[i.left.pos] = state(i.left.attrs)
@@ -286,6 +300,7 @@ def makeSparseContacts(cohesins, args):
     for i in cohesins:
         contacts.append([i.left.pos, i.right.pos])
     return contacts
+
 
 # def getSeparations(cohesins, args):
 #     separations = []

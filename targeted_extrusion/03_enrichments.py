@@ -25,15 +25,16 @@ from simutils import *
 import matplotlib.pyplot as plt
 
 from sys import argv
+
 input = argv[1]
 output = argv[2]
 
-if not output.endswith('pdf'):
+if not output.endswith("pdf"):
     raise Exception(f"Output file format unknown: {output}")
 
 # -------defining parameters----------
 #  -- basic loop extrusion parameters
-myfile = h5py.File(input, mode='r')
+myfile = h5py.File(input, mode="r")
 
 N = myfile.attrs["N"]
 LEFNum = myfile.attrs["LEFNum"]
@@ -44,13 +45,13 @@ mtx = np.zeros([5000, 5000])
 for locs in LEFpositions[:, :, :]:
     for pos1, pos2 in locs:
         if np.isfinite(pos1) and np.isfinite(pos2):
-            mtx[int(pos1%5000), int(pos2%5000)] += 1
-            mtx[int(pos2%5000), int(pos1%5000)] += 1
+            mtx[int(pos1 % 5000), int(pos2 % 5000)] += 1
+            mtx[int(pos2 % 5000), int(pos1 % 5000)] += 1
 
-plt.figure(figsize=(13,13))
-plt.imshow(mtx, cmap='coolwarm', vmin=-0, vmax=0.5)
+plt.figure(figsize=(13, 13))
+plt.imshow(mtx, cmap="coolwarm", vmin=-0, vmax=0.5)
 plt.colorbar()
-plt.savefig(f'{output}')
+plt.savefig(f"{output}")
 
 # Aggregated and pileup plots:
 from mirnylib import numutils
@@ -64,26 +65,49 @@ for window in [400]:
 
     for i in range(len(positions)):
         position = positions[i]
-        fragment = mtx[position - window // 2:position + window // 2, position - window // 2:position + window // 2]
+        fragment = mtx[
+            position - window // 2 : position + window // 2,
+            position - window // 2 : position + window // 2,
+        ]
         pile += fragment
 
         pile_agg += numutils.coarsegrain(fragment, aggcoef)
 
     plt.figure(figsize=(13, 13))
-    plt.imshow(pile, cmap='coolwarm', vmin=-0, vmax=np.nanpercentile(pile, 97))
-    plt.xticks([0, 10, 20, 30, 40], [f"{x:.0f} Kb" for x in
-                                     [-window // aggcoef, -0.5 * window // aggcoef, 0, 0.5 * window // aggcoef,
-                                      window // aggcoef]])
+    plt.imshow(pile, cmap="coolwarm", vmin=-0, vmax=np.nanpercentile(pile, 97))
+    plt.xticks(
+        [0, 10, 20, 30, 40],
+        [
+            f"{x:.0f} Kb"
+            for x in [
+                -window // aggcoef,
+                -0.5 * window // aggcoef,
+                0,
+                0.5 * window // aggcoef,
+                window // aggcoef,
+            ]
+        ],
+    )
     plt.colorbar()
-    plt.savefig(f'{output}.pile.{window}.pdf')
+    plt.savefig(f"{output}.pile.{window}.pdf")
 
     plt.figure(figsize=(13, 13))
-    plt.imshow(pile_agg, cmap='coolwarm', vmin=-0, vmax=np.nanpercentile(pile_agg, 97))
-    plt.xticks([0, 10, 20, 30, 40], [f"{x:.0f} Kb" for x in
-                                     [-window // aggcoef, -0.5 * window // aggcoef, 0, 0.5 * window // aggcoef,
-                                      window // aggcoef]])
+    plt.imshow(pile_agg, cmap="coolwarm", vmin=-0, vmax=np.nanpercentile(pile_agg, 97))
+    plt.xticks(
+        [0, 10, 20, 30, 40],
+        [
+            f"{x:.0f} Kb"
+            for x in [
+                -window // aggcoef,
+                -0.5 * window // aggcoef,
+                0,
+                0.5 * window // aggcoef,
+                window // aggcoef,
+            ]
+        ],
+    )
     plt.colorbar()
-    plt.savefig(f'{output}.pile_agg.{window}.pdf')
+    plt.savefig(f"{output}.pile_agg.{window}.pdf")
 
 
 #### Cohesin profile:
@@ -103,16 +127,30 @@ profile_pile_agg = np.zeros(window // aggcoef)
 
 for i in range(len(positions)):
     position = positions[i]
-    fragment = coh_profile[position - window // 2:position + window // 2]
+    fragment = coh_profile[position - window // 2 : position + window // 2]
     profile_pile += fragment
 
     profile_pile_agg += numutils.coarsegrain(fragment, aggcoef)
 
 plt.figure(figsize=(10, 5))
-plt.plot(profile_pile_agg / np.nanmean(profile_pile_agg), color='k')
-plt.plot(np.arange(0, 40, 1 / aggcoef), profile_pile / np.nanmean(profile_pile), color='k', alpha=0.2)
-plt.xticks([0, 10, 20, 30, 40], [f"{x:.0f} Kb" for x in
-                                 [-window // aggcoef, -0.5 * window // aggcoef, 0, 0.5 * window // aggcoef,
-                                  window // aggcoef]])
-plt.savefig(f'{output}.cohesin-profile.{window}.pdf')
-
+plt.plot(profile_pile_agg / np.nanmean(profile_pile_agg), color="k")
+plt.plot(
+    np.arange(0, 40, 1 / aggcoef),
+    profile_pile / np.nanmean(profile_pile),
+    color="k",
+    alpha=0.2,
+)
+plt.xticks(
+    [0, 10, 20, 30, 40],
+    [
+        f"{x:.0f} Kb"
+        for x in [
+            -window // aggcoef,
+            -0.5 * window // aggcoef,
+            0,
+            0.5 * window // aggcoef,
+            window // aggcoef,
+        ]
+    ],
+)
+plt.savefig(f"{output}.cohesin-profile.{window}.pdf")

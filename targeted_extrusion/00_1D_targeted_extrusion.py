@@ -2,50 +2,44 @@ from loadutils import *
 from simutils import *
 
 import logging
+
 logging.basicConfig(encoding="utf-8", level=logging.INFO)
 logging.info("Starting 1D simulations...")
 
 import tqdm
 import click
 
+
 @click.command()
+@click.option("-v", "--verbose", count=True)
 @click.option(
-    '-v',
-    '--verbose',
-    count=True)
-@click.option(
-    "--lifetime",
-    "-L",
-    default=100,
-    show_default=True,
-    help="lifetime",
-    type=int)
+    "--lifetime", "-L", default=100, show_default=True, help="lifetime", type=int
+)
 @click.option(
     "--separation",
     "-S",
-    default=None, # recommended default is 200
+    default=None,  # recommended default is 200
     help="separation of non-targeted LEFs",
-    type=int)
+    type=int,
+)
 @click.option(
     "--separation-total",
     default=None,
     help="separation of all LEFs, targeted plus non-targeted."
-         " Cannot be provided together with regular --separation",
-    type=int)
+    " Cannot be provided together with regular --separation",
+    type=int,
+)
 @click.option(
-    "--n-lef-targeted",
-    "-T",
-    default=None,
-    help="number of targeted LEFs", type=int
+    "--n-lef-targeted", "-T", default=None, help="number of targeted LEFs", type=int
 )
 @click.option(
     "--enrichment",
     "-E",
     default=None,
     help="relative enrichmetn at loading sites."
-         " Keep in mind that n_lef/n_lef_t = f.s./enrichment where f.s. is "
-         "fountain separation (mean distance between loading sites). "
-         " Cannot be provided with number of targeted LEFs --n-lef-targeted",
+    " Keep in mind that n_lef/n_lef_t = f.s./enrichment where f.s. is "
+    "fountain separation (mean distance between loading sites). "
+    " Cannot be provided with number of targeted LEFs --n-lef-targeted",
     type=np.float32,
 )
 @click.option(
@@ -58,7 +52,7 @@ import click
     "--tads",
     type=str,
     default="",
-    help="List of tads in each system (comma-separated list of integers)"
+    help="List of tads in each system (comma-separated list of integers)",
 )
 @click.option(
     "--ctcf-capture-probability",
@@ -80,7 +74,7 @@ import click
     default=6000,
     show_default=True,
     help="size of the single system ",
-    type=int
+    type=int,
 )
 @click.option(
     "--n-repeats",
@@ -110,10 +104,8 @@ import click
     "--output",
     required=True,
     help="Output file",
-    type=click.File('wb'),
+    type=click.File("wb"),
 )
-
-
 def run_targeted_loading_extrusion(
     lifetime,
     separation,
@@ -129,32 +121,38 @@ def run_targeted_loading_extrusion(
     trajectory_length,
     step,
     outfile,
-    verbose
+    verbose,
 ):
 
     # Verifying parameters:
-    if verbose==0:
+    if verbose == 0:
         tqdm_disable = True
     else:
         tqdm_disable = False
 
     if enrichment is None and n_lef_targeted is None:
-            raise ValueError("Either enrichment or n_lef_targeted should be provided")
+        raise ValueError("Either enrichment or n_lef_targeted should be provided")
     if not enrichment is None and not n_lef_targeted is None:
-        raise ValueError("Enrichment and number of targeted LEFs cannot be provided together")
+        raise ValueError(
+            "Enrichment and number of targeted LEFs cannot be provided together"
+        )
 
     if separation is None and separation_total is None:
-        raise ValueError("Either separation or total separation of LEFs should be provided")
+        raise ValueError(
+            "Either separation or total separation of LEFs should be provided"
+        )
     if not separation is None and not separation_total is None:
-        raise ValueError("Both separation and total separation cannot be provided together")
+        raise ValueError(
+            "Both separation and total separation cannot be provided together"
+        )
 
-    if len(loading_sites)>0:
-        loading_sites = [int(x) for x in loading_sites.split(',')]
+    if len(loading_sites) > 0:
+        loading_sites = [int(x) for x in loading_sites.split(",")]
     else:
         loading_sites = []
 
-    if len(tads)>0:
-        tads = [int(x) for x in tads.split(',')]
+    if len(tads) > 0:
+        tads = [int(x) for x in tads.split(",")]
     else:
         tads = []
 
@@ -163,22 +161,22 @@ def run_targeted_loading_extrusion(
     L_t = len(loading_sites) * n_repeats  # Number of beads with enriched loading
     fountain_separation = system_size / len(loading_sites)
 
-    if not separation is None: # Setting separation for only non-targeted LEFs
+    if not separation is None:  # Setting separation for only non-targeted LEFs
         n_lef = L // separation  # Number of regular LEFs
-        if n_lef==0:
+        if n_lef == 0:
             n_lef = 1
         if not enrichment is None:
-            n_lef_targeted = int( enrichment * L_t * n_lef // L )
+            n_lef_targeted = int(enrichment * L_t * n_lef // L)
         if not n_lef_targeted is None:
             enrichment = n_lef_targeted * L / (L_t * n_lef)
 
         n_lef_total = n_lef_targeted + n_lef
-        if n_lef_total==0:
+        if n_lef_total == 0:
             raise ValueError("Total number of LEFs cannot be zero")
         separation_total = L / n_lef_total
 
     elif not separation_total is None:
-        n_lef_total = int( L // separation_total )
+        n_lef_total = int(L // separation_total)
         if n_lef_total == 0:
             raise ValueError("Total number of LEFs cannot be zero")
         if not n_lef_targeted is None:
@@ -187,13 +185,13 @@ def run_targeted_loading_extrusion(
                 n_lef = 1
             enrichment = fountain_separation * n_lef_targeted / n_lef
         elif not enrichment is None:
-            n_lef = int( n_lef_total // ( 1 + enrichment/fountain_separation ) )
+            n_lef = int(n_lef_total // (1 + enrichment / fountain_separation))
             if n_lef == 0:
                 n_lef = 1
             n_lef_targeted = n_lef_total - n_lef
-        separation = L / n_lef # Define separation for non-targeted LEFs
+        separation = L / n_lef  # Define separation for non-targeted LEFs
 
-    if n_lef_targeted==0:
+    if n_lef_targeted == 0:
         separation_t = 100500
         separation_t_v1 = 100500
     else:
@@ -299,7 +297,7 @@ Derived parameters:
                 compression="gzip",
             )
 
-            for i in tqdm.tqdm(range(trajectory_length), disable=tqdm_disable ):
+            for i in tqdm.tqdm(range(trajectory_length), disable=tqdm_disable):
                 cur = []
 
                 for _ in range(step):
@@ -318,29 +316,32 @@ Derived parameters:
             myfile.attrs["N"] = L
             myfile.attrs["n_lef"] = n_lef
 
-            myfile.attrs.update({
-                "lifetime": lifetime,
-                "separation": separation,
-                "separation_total": separation_total,
-                "n_lef_targeted": n_lef_targeted,
-                "enrichment": enrichment,
-                "loading_sites": ','.join([str(x) for x in loading_sites]),
-                "tads": ','.join([str(x) for x in tads]),
-                "ctcf_release_probability": ctcf_release_probability,
-                "ctcf_capture_probability": ctcf_capture_probability,
-                "system_size": system_size,
-                "n_repeats": n_repeats,
-                "trajectory_length": trajectory_length,
-                "outfile": outfile.name,
-                "separation_t": separation_t,
-                "separation_t_v1": separation_t_v1,
-                "fountain_separation": fountain_separation,
-                "n_lef": n_lef,
-                "n_lef_total": n_lef_total,
-            })
+            myfile.attrs.update(
+                {
+                    "lifetime": lifetime,
+                    "separation": separation,
+                    "separation_total": separation_total,
+                    "n_lef_targeted": n_lef_targeted,
+                    "enrichment": enrichment,
+                    "loading_sites": ",".join([str(x) for x in loading_sites]),
+                    "tads": ",".join([str(x) for x in tads]),
+                    "ctcf_release_probability": ctcf_release_probability,
+                    "ctcf_capture_probability": ctcf_capture_probability,
+                    "system_size": system_size,
+                    "n_repeats": n_repeats,
+                    "trajectory_length": trajectory_length,
+                    "outfile": outfile.name,
+                    "separation_t": separation_t,
+                    "separation_t_v1": separation_t_v1,
+                    "fountain_separation": fountain_separation,
+                    "n_lef": n_lef,
+                    "n_lef_total": n_lef_total,
+                }
+            )
 
         except Exception as e:
             import os
+
             if os.path.exists(outfile.name):
                 os.remove(outfile.name)
 
